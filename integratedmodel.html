@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Speech Translator</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Lucide icons -->
+    <script type="module" src="https://unpkg.com/lucide-icons@latest/dist/lucide.min.js"></script>
+    <script nomodule src="https://unpkg.com/lucide-icons@latest/dist/lucide.js"></script>
+    <style>
+        /* Use Inter font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom styles for accessibility and theme */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        .card {
+            background-color: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 1rem; /* rounded-2xl */
+            padding: 1.5rem; /* p-6 */
+            transition: all 0.3s ease-in-out;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .btn {
+            padding-left: 1.5rem; /* px-6 */
+            padding-right: 1.5rem; /* px-6 */
+            padding-top: 0.75rem; /* py-3 */
+            padding-bottom: 0.75rem; /* py-3 */
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 600; /* font-semibold */
+            transition: all 300ms ease-in-out;
+            outline: none;
+        }
+
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #111827, 0 0 0 4px var(--tw-ring-color);
+        }
+        
+        .btn-primary {
+            background-color: #4f46e5; /* bg-indigo-600 */
+            color: #ffffff; /* text-white */
+            --tw-ring-color: #6366f1; /* focus:ring-indigo-500 */
+        }
+        .btn-primary:hover {
+            background-color: #6366f1; /* hover:bg-indigo-500 */
+            box-shadow: 0 0 20px #6366f1;
+        }
+        
+        .btn-danger {
+            background-color: #e11d48; /* bg-rose-600 */
+            color: #ffffff; /* text-white */
+            --tw-ring-color: #f43f5e; /* focus:ring-rose-500 */
+        }
+        .btn-danger:hover {
+            background-color: #f43f5e; /* hover:bg-rose-500 */
+            box-shadow: 0 0 20px #f43f5e;
+        }
+        
+        .btn-icon {
+            width: 4rem; /* w-16 */
+            height: 4rem; /* h-16 */
+            border-radius: 9999px; /* rounded-full */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+        
+        .loader {
+            width: 1.5rem; /* w-6 */
+            height: 1.5rem; /* h-6 */
+            border-width: 4px;
+            border-color: #818cf8; /* border-indigo-400 */
+            border-top-color: transparent; /* border-t-transparent */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        /* Style for the select dropdown */
+        select {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-size: 0.875rem; /* text-sm */
+            border-radius: 0.5rem; /* rounded-lg */
+            display: block;
+            width: 100%;
+            padding: 0.625rem; /* p-2.5 */
+            backdrop-filter: blur(16px);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #6366f1; /* focus:border-indigo-500 */
+            box-shadow: 0 0 0 2px #6366f1; /* focus:ring-indigo-500 */
+        }
+        
+        select option {
+            background-color: #111827; /* bg-gray-900 */
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-900 text-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl mx-auto space-y-8">
+        <header class="text-center">
+            <h1 class="text-4xl font-bold text-white">Speech-to-Speech Translator</h1>
+            <p class="text-lg text-gray-400 mt-2">Record, translate, and listen in another language.</p>
+        </header>
+
+        <!-- Controls -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <button id="recordButton" class="btn btn-primary btn-icon">
+                <!-- Mic icon -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+            </button>
+            
+            <div class="flex-grow w-full sm:w-auto">
+                <label for="inputLanguageSelect" class="block mb-2 text-sm font-medium text-gray-300">Speak in:</label>
+                <select id="inputLanguageSelect">
+                    <option value="en-US">English</option>
+                    <option value="hi-IN">Hindi</option>
+                    <option value="te-IN">Telugu</option>
+                </select>
+            </div>
+
+            <div class="flex-grow w-full sm:w-auto">
+                <label for="languageSelect" class="block mb-2 text-sm font-medium text-gray-300">Translate to:</label>
+                <select id="languageSelect">
+                    <option value="es">Spanish</option>
+                    <option value="fr">French</option>
+                    <option value="de">German</option>
+                    <option value="ja">Japanese</option>
+                    <option value="hi">Hindi</option>
+                    <option value="it">Italian</option>
+                    <option value="ko">Korean</option>
+                    <option value="pt">Portuguese</option>
+                    <option value="ru">Russian</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Error Message Display -->
+        <div id="errorMessage" class="hidden card bg-red-800 text-red-100 p-4" role="alert">
+            <h3 class="font-bold">Error</h3>
+            <p id="errorText"></p>
+        </div>
+
+        <!-- Results Grid -->
+        <div class="grid md:grid-cols-3 gap-6">
+            <!-- Original Transcript -->
+            <div class="card md:col-span-1">
+                <h2 id="originalLanguageHeader" class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <!-- Text icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-text"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>
+                    Original (English)
+                </h2>
+                <div id="transcript" class="text-gray-300 min-h-[100px] italic">Speak in your selected language...</div>
+            </div>
+
+            <!-- Translated Text -->
+            <div class="card md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <!-- Globe icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                    Translated Text
+                </h2>
+                <div id="translationWrapper" class="min-h-[100px]">
+                    <div id="translation" class="text-gray-300">...</div>
+                    <div id="translationLoader" class="hidden loader"></div>
+                </div>
+            </div>
+
+            <!-- Translated Audio -->
+            <div class="card md:col-span-1">
+                <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <!-- Volume icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                    Translated Audio
+                </h2>
+                <div id="audioWrapper" class="min-h-[100px] flex items-center justify-center">
+                    <audio id="audioPlayer" controls class="w-full hidden"></audio>
+                    <div id="audioLoader" class="hidden loader"></div>
+                    <div id="audioPlaceholder" class="text-gray-500">...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Globals and DOM Elements ---
+        const recordButton = document.getElementById('recordButton');
+        const inputLanguageSelect = document.getElementById('inputLanguageSelect');
+        const languageSelect = document.getElementById('languageSelect');
+        const transcriptDiv = document.getElementById('transcript');
+        const originalLanguageHeader = document.getElementById('originalLanguageHeader');
+        const translationDiv = document.getElementById('translation');
+        const translationLoader = document.getElementById('translationLoader');
+        const audioPlayer = document.getElementById('audioPlayer');
+        const audioLoader = document.getElementById('audioLoader');
+        const audioPlaceholder = document.getElementById('audioPlaceholder');
+        const errorMessageDiv = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+
+        // Gemini API Configuration
+        // NOTE: The API key is left blank. The environment will provide it.
+        const apiKey = "AIzaSyACsTkFOEHmafy6jRBOwJ2NNSCLcPHdM_U"; 
+        const translateApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+        const ttsApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+        let isRecording = false;
+        let recognition;
+
+        // Check for browser SpeechRecognition support
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            showError("Your browser does not support Speech Recognition. Please try Chrome or Edge.");
+            recordButton.disabled = true;
+        } else {
+            setupSpeechRecognition();
+        }
+
+        // --- Event Listener for Input Language Change ---
+        inputLanguageSelect.addEventListener('change', setupSpeechRecognition);
+
+        // --- Speech Recognition (STT) ---
+        function setupSpeechRecognition() {
+            // If recognition is already running, stop it
+            if (isRecording) {
+                recognition.stop();
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = inputLanguageSelect.value; // Set language from dropdown
+            recognition.continuous = false; // Stop after first utterance
+            recognition.interimResults = false; // We only want the final result
+
+            recognition.onstart = () => {
+                isRecording = true;
+                const selectedLanguageName = inputLanguageSelect.options[inputLanguageSelect.selectedIndex].text;
+                transcriptDiv.textContent = `Listening in ${selectedLanguageName}...`;
+                originalLanguageHeader.textContent = `Original (${selectedLanguageName})`;
+                recordButton.classList.remove('btn-primary');
+                recordButton.classList.add('btn-danger');
+                recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-square"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>`;
+                hideError();
+                resetOutputs();
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                recordButton.classList.remove('btn-danger');
+                recordButton.classList.add('btn-primary');
+                recordButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mic"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>`;
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                transcriptDiv.textContent = transcript;
+                // Once we have the transcript, start the translation
+                translateText(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                showError(`Speech recognition error: ${event.error}`);
+            };
+        }
+
+        // --- Button Click Handler ---
+        recordButton.addEventListener('click', () => {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                if (recognition) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        showError("Error starting recognition. Another recognition might be in progress.");
+                    }
+                }
+            }
+        });
+
+        // --- Pre-flight Check for API Key ---
+        function checkApiKey() {
+            if (apiKey === "") {
+                // This error will show if the key is just an empty string.
+                // In this environment, the key is injected, but if run elsewhere, this will trigger.
+                showError("API key is missing. This app requires a valid Gemini API key to function.");
+                return false;
+            }
+            // If the key is present but *still* gives a 403, it's a permissions issue with the key itself.
+            hideError();
+            return true;
+        }
+
+
+        // --- Translation (Gemini API) ---
+        async function translateText(textToTranslate) {
+            if (!checkApiKey()) return; // Stop if key is missing
+
+            const targetLanguage = languageSelect.options[languageSelect.selectedIndex].text;
+            const sourceLanguage = inputLanguageSelect.options[inputLanguageSelect.selectedIndex].text;
+            
+            // Set loading state
+            translationDiv.textContent = "";
+            translationLoader.classList.remove('hidden');
+
+            const systemPrompt = "You are a professional translator. Translate the user's text accurately and naturally.";
+            const userQuery = `Translate the following text from ${sourceLanguage} to ${targetLanguage}: "${textToTranslate}"`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                const response = await fetchWithRetry(translateApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const translatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (translatedText) {
+                    translationDiv.textContent = translatedText;
+                    // Once translated, generate speech
+                    generateSpeech(translatedText);
+                } else {
+                    throw new Error("Invalid response from translation API.");
+                }
+
+            } catch (error) {
+                showError(`Translation failed: ${error.message}`);
+            } finally {
+                translationLoader.classList.add('hidden');
+            }
+        }
+
+        // --- Text-to-Speech (Gemini API) ---
+        async function generateSpeech(textToSpeak) {
+            if (!checkApiKey()) return; // Stop if key is missing
+
+            // Set loading state
+            audioPlayer.classList.add('hidden');
+            audioPlaceholder.classList.add('hidden');
+            audioLoader.classList.remove('hidden');
+            
+            const payload = {
+                contents: [{
+                    parts: [{ text: textToSpeak }]
+                }],
+                generationConfig: {
+                    responseModalities: ["AUDIO"],
+                },
+                model: "gemini-2.5-flash-preview-tts"
+            };
+
+            try {
+                const response = await fetchWithRetry(ttsApiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                const part = result?.candidates?.[0]?.content?.parts?.[0];
+                const audioData = part?.inlineData?.data;
+                const mimeType = part?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    // API returns audio/L16; rate=24000
+                    const sampleRate = parseInt(mimeType.match(/rate=(\d+)/)[1], 10) || 24000;
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    audioPlayer.src = audioUrl;
+                    audioPlayer.classList.remove('hidden');
+                    audioPlayer.play();
+                } else {
+                    throw new Error("Invalid response from TTS API.");
+                }
+
+            } catch (error) {
+                showError(`Text-to-Speech failed: ${error.message}`);
+                audioPlaceholder.classList.remove('hidden');
+            } finally {
+                audioLoader.classList.add('hidden');
+            }
+        }
+        
+        // --- API Fetch with Exponential Backoff ---
+        async function fetchWithRetry(url, options, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 || response.status >= 500) {
+                        // Throttling or server error, wait and retry
+                        await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                        continue;
+                    }
+                    return response; // Successful response
+                } catch (error) {
+                    // Network error, wait and retry
+                    await new Promise(resolve => setTimeout(resolve, delay * Math.pow(2, i)));
+                }
+            }
+            throw new Error("API request failed after multiple retries.");
+        }
+
+        // --- Audio Helper Functions ---
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const numChannels = 1;
+            const bitsPerSample = 16;
+            const blockAlign = (numChannels * bitsPerSample) / 8;
+            const byteRate = sampleRate * blockAlign;
+            const dataSize = pcmData.length * (bitsPerSample / 8);
+            const buffer = new ArrayBuffer(44 + dataSize);
+            const view = new DataView(buffer);
+
+            // RIFF header
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + dataSize, true);
+            writeString(view, 8, 'WAVE');
+            // fmt chunk
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true); // Audio format (1 = PCM)
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, byteRate, true);
+            view.setUint16(32, blockAlign, true);
+            view.setUint16(34, bitsPerSample, true);
+            // data chunk
+            writeString(view, 36, 'data');
+            view.setUint32(40, dataSize, true);
+
+            // Write PCM data
+            for (let i = 0; i < pcmData.length; i++) {
+                view.setInt16(44 + i * 2, pcmData[i], true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        function writeString(view, offset, string) {
+            for (let i = 0; i < string.length; i++) {
+                view.setUint8(offset + i, string.charCodeAt(i));
+            }
+        }
+
+        // --- UI Helper Functions ---
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessageDiv.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessageDiv.classList.add('hidden');
+        }
+
+        function resetOutputs() {
+            const selectedLanguageName = inputLanguageSelect.options[inputLanguageSelect.selectedIndex].text;
+            originalLanguageHeader.textContent = `Original (${selectedLanguageName})`;
+            transcriptDiv.textContent = "Speak in your selected language...";
+            translationDiv.textContent = "...";
+            audioPlayer.classList.add('hidden');
+            audioPlayer.src = "";
+            audioPlaceholder.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
+
+
+
+
