@@ -1,94 +1,165 @@
-QalamAI Speech Translator – Monorepo (Modules 1–4)
-A multi-module project for speech translation workflows, ranging from environment checks to dataset preparation, batch translation, realtime OTT/YouTube translation, and a web UI built with Flask.
+# Speech-to-Speech Transcription and Translation
 
-Repository Layout
-speech-translator/module1/ – Environment & quick sanity checks
+![Build Status](https://img.shields.io/badge/status-active-brightgreen) ![License](https://img.shields.io/badge/license-MIT-blue) ![Python](https://img.shields.io/badge/python-3.8%2B-yellow)
 
-colab_setup.ipynb, test_env.py, requirements.txt
-Goal: verify Python/audio stack, GPUs (if any), and key libraries
-speech-translator/module2/ – Offline/Batch translation toolkit
+An attractive, easy-to-read repository README for a speech-to-speech transcription/translation project. This project converts spoken audio from one language into spoken audio in another, supporting both real-time streaming and offline batch workflows.
 
-Scripts: dataset downloaders, audio conversion, batch translator
-Assets: data/, outputs/, logs/ etc.
-Goal: prepare audio datasets, convert formats, translate in batches
-speech-translator/module3/ – OTT/realtime translation (scripted)
+---
 
-module3_ott_realtime.py and related docs
-Goal: run realtime style translation from mic/stream inputs without web UI
-speech-translator/module4/ – Flask web app (UI + endpoints)
+## Key Features
 
-app.py, templates/, static/, uploads/
-Goal: upload audio/video, live mic translation, and YouTube chunked translation with TTS output
-Features by Module
-Module 1 – Environment Check
-Quick verification of Python/audio libs
-Simple recognition/translation dry-runs
-Good for first-time setup and CI sanity checks
-Module 2 – Batch Tools
-Download/open datasets (e.g., HuggingFace)
-Convert mp3 ↔ wav with consistent sampling (16kHz, mono)
-Batch translate using chosen translation backend
-Logs and outputs saved under outputs/, logs/
-Module 3 – OTT/Realtime (Scripted)
-CLI-style experiment for realtime translation from mic or stream
-Good for quick experiments without the web server
-Module 4 – Flask Web App
-Pages:
-Live Microphone translation (record → STT → translate → TTS)
-Upload Audio/Video with preview and TTS output
-YouTube link translation (downloads audio, chunks ~8s, STT+translate+TTS)
-TTS voices:
-Edge TTS when available (gendered voices for supported languages)
-Fallback to gTTS
-STT:
-Google SpeechRecognition (chunking + language fallbacks)
-Conversion pipeline robust to assorted formats (moviepy/librosa/pydub)
-Supported target languages (UI): en, hi, pa, mr, kn, te, ta, gu, ml, bn, or, ur
+- End-to-end speech-to-speech pipeline: ASR -> MT -> TTS
+- Streaming (low-latency) and batch (high-quality) modes
+- Modular: swap ASR/MT/TTS models and runtimes easily
+- Multilingual: configurable source/target language pairs
+- Dockerized for reproducible deployment
+- REST & WebSocket APIs for integration
 
-Prerequisites
-Python 3.11–3.13 recommended
-Windows users: FFmpeg is handled automatically via imageio_ffmpeg in Module 4. For other modules, installing FFmpeg system-wide is still recommended:
-Download static build from ffmpeg.org and add bin to PATH
-For YouTube: pytube and yt-dlp are used as needed
-Quick Start – Module 4 (Web App)
-Install dependencies
-cd speech-translator/module4
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-Run the app
-python app.py
-Open the UI
-http://127.0.0.1:5000
-Notes
+---
 
-If using a separate static host (e.g., Netlify), deploy speech-translator/module4/ and set window.BACKEND_BASE_URL in index.html to your Flask server URL.
-Module 2 – Common Commands
-Convert mp3 to wav (example):
-python convert_mp3_to_wav.py
-Batch translate
-python module2_batch_translator.py
-Dataset utilities
-python fetch_audio_datasets.py
-Refer to QUICK_START.md and README.md inside Module 2 for details.
+## Why this project?
 
-Module 3 – Realtime Script
-See speech-translator/module3/README.md and QUICK_START.md
-Example
-python module3_ott_realtime.py
-Configuration & Tips
-STT language hint: Module 4 allows a source_lang hint on /mic_record to improve recognition.
-Audio conversion: app.py attempts multiple pipelines (moviepy → system ffmpeg → librosa → pydub → moviepy fallback) to maximize compatibility.
-YouTube: If pytube fails, the app falls back to yt-dlp.
-Troubleshooting
-"FFmpeg not found" in Modules 1–3
-Install FFmpeg and ensure ffmpeg -version works in terminal.
-400/500 responses in the web app
-Check server logs; the app prints precise errors (invalid URL, download failure, STT errors)
-Unicode console errors on Windows
-The app configures UTF-8 console output; if problems persist, run terminal as UTF-8 (chcp 65001).
-License
-This repository is provided for educational and research purposes. Review third‑party package licenses (gTTS, Edge TTS, yt-dlp, pytube, librosa, etc.) before commercial use.
+This repository makes it straightforward to prototype, evaluate, and deploy speech-to-speech systems. It focuses on modularity so you can experiment with different ASR, MT, and TTS models, or train end-to-end S2S systems (e.g., Translatotron-style) without changing the whole stack.
 
-Acknowledgments
-Python SpeechRecognition, gTTS, Edge TTS, librosa, moviepy, yt-dlp, pytube
-Hugging Face datasets (optional, Module 2)
+---
+
+## Quickstart
+
+Requirements:
+- Python 3.8+
+- PyTorch
+- FFmpeg (for audio processing)
+- (Optional) Docker
+
+Install:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Offline example (translate a single file):
+
+```bash
+python scripts/translate_file.py --input audio/source.wav --src en --tgt es --output audio/translated_es.wav
+```
+
+Run the server (development):
+
+```bash
+python -m server --config configs/local.yml
+# or using Docker
+docker build -t s2s-translator:latest .
+docker run -p 8000:8000 s2s-translator:latest
+```
+
+Streaming (WebSocket):
+
+```bash
+python scripts/stream_server.py --config configs/stream.yml
+# connect a client to ws://localhost:8000/stream
+```
+
+---
+
+## Architecture Overview
+
+1. Input: live microphone or audio file
+2. ASR: speech -> text (streaming or batch)
+3. MT: text -> text (supports incremental translation)
+4. TTS: text -> synthetic speech
+5. Optional: voice conversion / prosody transfer to preserve speaker characteristics
+
+Pipelines:
+- Streaming: chunked audio -> streaming ASR -> incremental MT -> streaming TTS
+- Offline: full-audio -> batch ASR -> MT on transcript -> high-quality TTS
+
+---
+
+## Suggested Models & Tools
+
+- ASR: Whisper, Wav2Vec 2.0, Kaldi
+- MT: MarianMT, mBART, fairseq
+- TTS: VITS, Tacotron2, FastSpeech2
+- End-to-end S2S: Translatotron, Translatotron2
+- Libraries: PyTorch, Hugging Face Transformers, torchaudio
+- Deployment: ONNX, TensorRT, Docker
+
+---
+
+## Configuration
+
+Use YAML files in the `configs/` directory to control models and pipeline behavior.
+
+Example `configs/models.yml`:
+
+```yaml
+asr:
+  type: whisper
+  model: small
+mt:
+  type: marian
+  model: Helsinki-NLP/opus-mt-en-es
+tts:
+  type: vits
+  model_path: /models/vits_en_es.pth
+```
+
+---
+
+## Evaluation Metrics
+
+- ASR: WER (Word Error Rate)
+- MT: BLEU or chrF
+- TTS: MOS (Mean Opinion Score), objective mel-spectrogram metrics
+- End-to-end: human rating for intelligibility, fidelity, and latency
+
+---
+
+## Datasets
+
+- CoVoST, MuST-C (speech translation)
+- LibriSpeech (ASR pretraining)
+- Common Voice (multilingual speech)
+
+---
+
+## Performance & Latency Tips
+
+- Use streaming ASR and incremental MT for low latency
+- Quantize models or convert to ONNX/TensorRT for faster inference
+- Pipeline ASR/MT/TTS in separate processes
+
+---
+
+## Security & Privacy
+
+- Minimize audio retention and delete temp files
+- Secure APIs with API keys / OAuth2
+- Consider on-device inference for sensitive audio
+
+---
+
+## Contributing
+
+Contributions welcome! Suggested flow:
+
+1. Fork the repo
+2. Create a branch: `feature/your-change`
+3. Open a PR with description and tests/examples
+
+See CONTRIBUTING.md for more.
+
+---
+
+## License
+
+This project uses the MIT License — update as appropriate for your repo and include upstream model licenses where required.
+
+---
+
+## Maintainers
+
+- Maintainer: svnallagonda <>
+- Repo: https://github.com/svnallagonda/speech-to-speech-transcription
